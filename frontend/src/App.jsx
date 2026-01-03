@@ -1,8 +1,9 @@
 
-import { useState } from 'react'
+import { useState, Suspense, lazy } from 'react'
 import { FileText, AlertCircle, Sparkles, Camera } from 'lucide-react'
 import FileUpload from './components/FileUpload'
-import Scanner from './components/Scanner'
+// Lazy load Scanner to prevent load-time crash if jscanify/opencv fails
+const Scanner = lazy(() => import('./components/Scanner'))
 import LanguageSelector from './components/LanguageSelector'
 import Navbar from './components/Navbar'
 import ExplanationView from './components/ExplanationView'
@@ -57,13 +58,15 @@ function App() {
       <Navbar t={t} />
 
       {showScanner && (
-        <Scanner
-          onScan={(scannedFile) => {
-            handleFileSelect(scannedFile)
-            setShowScanner(false)
-          }}
-          onCancel={() => setShowScanner(false)}
-        />
+        <Suspense fallback={<div className="fixed inset-0 z-50 bg-black flex items-center justify-center text-white">Loading Scanner...</div>}>
+          <Scanner
+            onScan={(scannedFile) => {
+              handleFileSelect(scannedFile)
+              setShowScanner(false)
+            }}
+            onCancel={() => setShowScanner(false)}
+          />
+        </Suspense>
       )}
 
       {/* Simplified, editorial header */}
