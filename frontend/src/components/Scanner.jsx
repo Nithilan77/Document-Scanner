@@ -1,6 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Webcam from 'react-webcam';
-import jscanify from 'jscanify';
 import { Camera, RefreshCw, Check, X, Maximize } from 'lucide-react';
 
 const Scanner = ({ onScan, onCancel }) => {
@@ -11,14 +10,22 @@ const Scanner = ({ onScan, onCancel }) => {
   const [scanner, setScanner] = useState(null);
 
   useEffect(() => {
-    try {
-      console.log("Initializing jscanify...");
-      const js = new jscanify();
-      setScanner(js);
-      console.log("jscanify initialized");
-    } catch (e) {
-      console.error("jscanify initialization failed:", e);
-    }
+    const loadScanner = async () => {
+      try {
+        console.log("Initializing jscanify...");
+        // Dynamic import to prevent openCV/build issues from crashing the app
+        const jscanifyModule = await import('jscanify');
+        // Handle both default and named exports
+        const Jscanify = jscanifyModule.default || jscanifyModule;
+        const js = new Jscanify();
+        setScanner(js);
+        console.log("jscanify initialized");
+      } catch (e) {
+        console.error("jscanify initialization failed:", e);
+        // We can still proceed without the scanner (fallback to raw image)
+      }
+    };
+    loadScanner();
   }, []);
 
   // Video constraints for higher quality
