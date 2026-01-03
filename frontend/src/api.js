@@ -20,3 +20,13 @@ export const analyzeDocument = async (filename, language) => {
     })
     return response.data
 }
+
+export const generateAudio = async (text, language) => {
+    const response = await axios.post(`${API_base}/tts`, {
+        text,
+        language
+    }, {
+        responseType: 'blob' // Important: Expect binary audio data
+    })
+    return response.data
+}

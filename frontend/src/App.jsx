@@ -1,14 +1,19 @@
 
 import { useState } from 'react'
-import { FileText, AlertCircle, Sparkles } from 'lucide-react'
+import { FileText, AlertCircle, Sparkles, Camera } from 'lucide-react'
 import FileUpload from './components/FileUpload'
+import Scanner from './components/Scanner'
 import LanguageSelector from './components/LanguageSelector'
+import Navbar from './components/Navbar'
 import ExplanationView from './components/ExplanationView'
 import { uploadFile, analyzeDocument } from './api'
+import { translations } from './utils/translations'
 
 function App() {
   const [file, setFile] = useState(null)
-  const [language, setLanguage] = useState('Hindi')
+  const [showScanner, setShowScanner] = useState(false)
+  const [language, setLanguage] = useState('Hindi') // Explanation Language
+  const [uiLanguage, setUiLanguage] = useState('English') // UI Language
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
@@ -18,6 +23,8 @@ function App() {
     setResult(null)
     setError(null)
   }
+
+  const t = translations[uiLanguage] || translations['English']
 
   const handleAnalyze = async () => {
     if (!file) return
@@ -37,7 +44,7 @@ function App() {
       setResult(analysisResp)
     } catch (err) {
       console.error("Full Error Object:", err)
-      const errorMsg = err.response?.data?.detail || err.message || "Something went wrong. Please try again."
+      const errorMsg = err.response?.data?.detail || err.message || t.errorGeneric
       const finalError = typeof errorMsg === 'object' ? JSON.stringify(errorMsg) : String(errorMsg)
       setError(finalError)
     } finally {
@@ -46,112 +53,137 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-900 text-neutral-100 font-sans selection:bg-indigo-500 selection:text-white pb-20">
-      {/* Background Gradient Mesh */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-900/20 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-900/20 rounded-full blur-[120px]" />
-      </div>
+    <div className="min-h-screen pb-20 bg-neutral-50/50">
+      <Navbar t={t} />
 
-      {/* Header */}
-      <header className="border-b border-neutral-800 bg-neutral-900/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="bg-gradient-to-br from-indigo-600 to-cyan-600 p-2 rounded-lg shadow-lg shadow-indigo-500/20">
-              <FileText className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">
-              DocExplainer
-            </span>
-          </div>
-          <p className="text-sm text-neutral-400 hidden sm:block font-medium">
-            AI-Powered Document Analysis
-          </p>
-        </div>
+      {showScanner && (
+        <Scanner
+          onScan={(scannedFile) => {
+            handleFileSelect(scannedFile)
+            setShowScanner(false)
+          }}
+          onCancel={() => setShowScanner(false)}
+        />
+      )}
+
+      {/* Simplified, editorial header */}
+      <header className="max-w-3xl mx-auto pt-12 pb-8 px-6 text-center">
+        {/* Icon moved to Navbar */}
+        <h1 className="text-4xl md:text-5xl font-serif text-neutral-900 mb-4 tracking-tight">
+          {t.heroTitle} <span className="text-green-600">{t.heroTitleHighlight}</span>
+        </h1>
+        <p className="text-lg text-neutral-600 font-sans max-w-xl mx-auto leading-relaxed">
+          {t.heroDescription}
+        </p>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">
-        <div className="text-center mb-12 space-y-4 animate-in slide-in-from-top-4 duration-700">
-          <div className="inline-flex items-center space-x-2 bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-full text-sm font-medium mb-2 border border-indigo-500/20">
-            <Sparkles className="w-4 h-4" />
-            <span>Powered by Gemini 2.0 Vision</span>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
-            Understand Documents in <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Any Language</span>
-          </h1>
-          <p className="text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed">
-            Upload legal notices, bills, or official letters. Our AI extracts key details, explains complex terms, and translates everything for you.
-          </p>
-        </div>
+      <main className="max-w-3xl mx-auto px-6 space-y-8">
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left: Controls */}
-          <div className="lg:col-span-5 space-y-6">
-            <div className="bg-neutral-800/50 border border-neutral-700/50 rounded-2xl p-6 backdrop-blur-sm hover:border-indigo-500/30 transition-all duration-300 shadow-xl">
-              <h2 className="text-lg font-semibold text-white mb-4">1. Upload Document</h2>
-              <FileUpload
-                onFileSelect={handleFileSelect}
-                selectedFile={file}
-                error={null}
-              />
-            </div>
+        {/* Step 1: Input Area - Designed as a single "Paper" task */}
+        <div className="paper-card p-8 md:p-10">
+          <div className="space-y-8">
 
-            <div className="bg-neutral-800/50 border border-neutral-700/50 rounded-2xl p-6 backdrop-blur-sm hover:border-indigo-500/30 transition-all duration-300 shadow-xl">
-              <h2 className="text-lg font-semibold text-white mb-4">2. Select Language</h2>
-              <LanguageSelector
-                selectedLanguage={language}
-                onLanguageChange={setLanguage}
-              />
-
-              <button
-                onClick={handleAnalyze}
-                disabled={!file || loading}
-                className="w-full mt-6 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white font-bold py-3 px-6 rounded-xl transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/25 flex items-center justify-center space-x-2"
-              >
-                {loading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Processing...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-5 h-5" />
-                    <span>Analyze Document</span>
-                  </>
-                )}
-              </button>
-
-              {error && (
-                <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start space-x-3 text-red-400 text-sm animate-in shake">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                  <span>{error}</span>
+            {/* 1. Upload */}
+            <div className="space-y-4 transition-opacity duration-300">
+              <label className="block text-lg font-serif font-medium text-neutral-800">
+                {t.step1}
+              </label>
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <FileUpload
+                    onFileSelect={handleFileSelect}
+                    selectedFile={file}
+                    error={null} // Validation handled locally for now
+                  />
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right: Results */}
-          <div className="lg:col-span-7">
-            {/* When no result/loading, show placeholder or loading state inside ExplanationView handles loading */}
-            {!result && !loading ? (
-              <div className="bg-neutral-800/30 border border-neutral-700/30 rounded-2xl p-12 text-center text-neutral-500 flex flex-col items-center justify-center min-h-[500px] border-dashed">
-                <div className="w-20 h-20 bg-neutral-800 rounded-full flex items-center justify-center mb-4">
-                  <FileText className="w-10 h-10 text-neutral-600" />
-                </div>
-                <h3 className="text-xl font-medium text-neutral-300 mb-2">Ready to Analyze</h3>
-                <p className="max-w-xs mx-auto">Upload a document and select your language to get started.</p>
+                <button
+                  onClick={() => setShowScanner(true)}
+                  className="btn-secondary flex items-center justify-center space-x-2 h-auto py-6 md:py-0 md:w-1/3 border border-neutral-300 shadow-sm bg-white hover:bg-neutral-50"
+                >
+                  <Camera className="w-5 h-5" />
+                  <span>{t.scanButton}</span>
+                </button>
               </div>
-            ) : (
-              <ExplanationView
-                explanation={result?.explanation}
-                relatedLaws={result?.related_laws}
-                loading={loading}
-              />
+            </div>
+
+            {/* 2. Language Selection */}
+            {file && (
+              <div className="space-y-4 animate-in slide-in-from-bottom-2 fade-in duration-500">
+                <hr className="border-neutral-100" />
+                <label className="block text-lg font-serif font-medium text-neutral-800">
+                  {t.step2}
+                </label>
+                <LanguageSelector
+                  selectedLanguage={language}
+                  onLanguageChange={setLanguage}
+                  label={null} // Label handled above
+                />
+              </div>
             )}
+
+            {/* 3. Action Button */}
+            {file && (
+              <div className="pt-4 animate-in slide-in-from-bottom-2 fade-in duration-700 delay-100">
+                <button
+                  onClick={handleAnalyze}
+                  disabled={loading}
+                  className="w-full btn-primary text-lg py-4 shadow-lg shadow-green-900/10 flex items-center justify-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>{t.processing}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{t.analyzeButton}</span>
+                    </>
+                  )}
+                </button>
+                {error && (
+                  <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-lg border border-red-100 flex items-start space-x-3 text-sm">
+                    <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                    <span>{error}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
           </div>
         </div>
+
+        {/* Results Area - Editorial / Letter style */}
+        {(result || loading) && (
+          <div className="relative">
+            {/* Connector Line */}
+            <div className="absolute left-1/2 -top-8 bottom-0 w-px bg-neutral-200 -z-10 hidden md:block"></div>
+
+            <ExplanationView
+              explanation={result?.explanation}
+              relatedLaws={result?.related_laws}
+              loading={loading}
+              language={language}
+              uiLanguage={uiLanguage}
+            />
+          </div>
+        )}
       </main>
+
+      <footer className="max-w-3xl mx-auto px-6 py-12 text-center">
+        <div className="flex justify-center items-center space-x-6 mb-8 text-neutral-400">
+          <div className="flex items-center space-x-2">
+            <LanguageSelector
+              selectedLanguage={uiLanguage}
+              onLanguageChange={setUiLanguage}
+              minimal={true}
+            />
+          </div>
+        </div>
+        <p className="text-neutral-400 text-sm">
+          We do not store your documents. Data is processed securely and deleted immediately.
+        </p>
+      </footer>
+
     </div>
   )
 }

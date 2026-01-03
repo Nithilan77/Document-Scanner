@@ -1,8 +1,11 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 import shutil
 import os
+import io
 from tempfile import NamedTemporaryFile
+import tts_service
 
 # Initialize App
 app = FastAPI(title="Document Scanner & Explainer API")
@@ -107,5 +110,47 @@ async def analyze_document(request: AnalyzeRequest):
         
     except Exception as e:
         print(f"Error during analysis: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- TTS Endpoint ---
+class TTSRequest(BaseModel):
+    text: str
+    language: str
+
+@app.post("/tts")
+async def text_to_speech(request: TTSRequest):
+    """
+    Generates speech from text using Google Cloud TTS.
+    Returns an MP3 audio stream.
+    """
+    try:
+        print(f"Received TTS request. Text length: {len(request.text)}, Language: {request.language}")
+        # Map frontend simplified language names to BCP-47 codes
+        lang_map = {
+            "English": "en-US",
+            "Hindi": "hi-IN",
+            "Tamil": "ta-IN",
+            "Telugu": "te-IN",
+            "Kannada": "kn-IN",
+            "Malayalam": "ml-IN",
+            "Marathi": "mr-IN",
+            "Gujarati": "gu-IN",
+            "Bengali": "bn-IN",
+            "Punjabi": "pa-IN",
+            "Spanish": "es-ES",
+            "French": "fr-FR",
+        }
+        
+        # Default to English if not found
+        lang_code = lang_map.get(request.language, "en-US")
+        
+        audio_content = tts_service.generate_speech(request.text, lang_code)
+        
+        return StreamingResponse(
+            io.BytesIO(audio_content), 
+            media_type="audio/mpeg"
+        )
+    except Exception as e:
+        print(f"TTS Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
