@@ -1,11 +1,25 @@
 import os
+import json
+import tempfile
 from google.cloud import texttospeech
 
-# Path to your service account key file
+# Credential Loading Logic
 KEY_PATH = os.path.join(os.path.dirname(__file__), "keys", "tts-service-key.json")
 
-# Set environment variable so Google Client finds the credentials automatically
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = KEY_PATH
+if os.path.exists(KEY_PATH):
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = KEY_PATH
+else:
+    # Fallback for Render/Cloud: Load from environment variable
+    creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
+    if creds_json:
+        # Create a temp file for the credentials
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as temp:
+            temp.write(creds_json)
+            temp_path = temp.name
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = temp_path
+        print(f"Loaded Google Credentials from environment variable to {temp_path}")
+    else:
+        print("Warning: No Google Cloud TTS credentials found (File missing and GOOGLE_CREDENTIALS_JSON not set). TTS will fail.")
 
 def chunk_text(text: str, max_bytes: int = 4500):
     """
